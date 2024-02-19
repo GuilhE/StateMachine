@@ -37,6 +37,7 @@ internal class StateMachineTest {
                     SideEffect.LogFrozen -> logger.log(ON_FROZEN_MESSAGE)
                     SideEffect.LogVaporized -> logger.log(ON_VAPORIZED_MESSAGE)
                     SideEffect.LogCondensed -> logger.log(ON_CONDENSED_MESSAGE)
+                    else -> logger.log("Unknown SideEffect")
                 }
             }
         }

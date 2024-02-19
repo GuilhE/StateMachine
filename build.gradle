@@ -1,15 +1,20 @@
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension
+
 buildscript {
-    ext.kotlin_version = '1.3.72'
-    ext.atomicfu_version = '0.14.2'
+    ext.kotlin_version = '1.9.22'
+    ext.atomicfu_version = '0.23.2'
 
     repositories {
         mavenCentral()
-        jcenter()
     }
     dependencies {
-        classpath "org.jetbrains.kotlinx:atomicfu-gradle-plugin:$atomicfu_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlinx:atomicfu-gradle-plugin:$atomicfu_version"
     }
+}
+
+repositories {
+    mavenCentral()
 }
 
 group GROUP
@@ -18,20 +23,17 @@ version VERSION_NAME
 apply plugin: "org.jetbrains.kotlin.multiplatform"
 apply plugin: "kotlinx-atomicfu"
 
-repositories {
-    mavenCentral()
-}
-
-
 kotlin {
-    jvm("jvm6")
-    jvm("jvm8")
-
+    applyDefaultHierarchyTemplate()
+    jvm()
     js {
         browser {
         }
         nodejs {
         }
+    }
+    wasmJs {
+        nodejs
     }
     // For ARM, should be changed to iosArm32 or iosArm64
     // For Linux, should be changed to e.g. linuxX64
@@ -46,7 +48,7 @@ kotlin {
             kotlin.srcDir('src/main/')
             dependencies {
                 implementation kotlin('stdlib-common')
-                implementation "org.jetbrains.kotlinx:atomicfu-common:$atomicfu_version"
+                api "org.jetbrains.kotlinx:atomicfu:$atomicfu_version"
             }
         }
         commonTest {
@@ -56,33 +58,18 @@ kotlin {
                 implementation kotlin('test-annotations-common')
             }
         }
-
-        jvm6Main {
-            dependencies {
-                implementation kotlin('stdlib')
-                implementation kotlin('test-annotations-common')
-            }
-
-        }
-        jvm6Test {
-            dependencies {
-                implementation kotlin('test')
-                implementation kotlin('test-junit')
-            }
-        }
-
-        jvm8Main {
+        jvmMain {
             task {
                 kotlinOption.jvmTarget = JavaVersion.VERSION_1_8
             }
 
             dependencies {
-                implementation kotlin('stdlib-jdk8')
-                implementation kotlin('test-annotations-common')
+                compileOnly kotlin('stdlib-jdk8')
+                compileOnly kotlin('test-annotations-common')
             }
         }
 
-        jvm8Test {
+        jvmTest {
             dependencies {
                 implementation kotlin('test')
                 implementation kotlin('test-junit')
@@ -90,17 +77,33 @@ kotlin {
         }
         jsMain {
             dependencies {
-                implementation kotlin('stdlib-js') }
+                compileOnly kotlin('stdlib-js') }
         }
         jsTest {
             dependencies {
                 implementation kotlin('test-js')
             }
         }
+        wasmJs {
+            sourceSets.commonMain
+            dependencies {
+                compileOnly kotlin('stdlib-wasm-js')
+            }
+        }
+        wasmJsTest {
+            dependencies {
+                implementation kotlin('test-wasm-js')
+            }
+        }
         macosMain {
         }
         macosTest {
         }
-
     }
+}
+
+extensions.findByType(NodeJsRootExtension.class).with {
+    // canary nodejs that supports recent Wasm GC changes
+    it.nodeVersion = '21.0.0-v8-canary202309167e82ab1fa2'
+    it.nodeDownloadBaseUrl = 'https://nodejs.org/download/v8-canary'
 }
